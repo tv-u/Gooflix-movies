@@ -1,0 +1,6 @@
+{
+  "name": "GOO TV - Movies, Web Series & Live Cinema",
+  "description": "Stream movies, web series, K-Dramas, Hindi, Punjabi, and South cinema with multi-server playback and 50-language support on GOO TV.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

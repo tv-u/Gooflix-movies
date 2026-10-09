@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { MovieOrShow } from '../types';
 import { getBackdropUrl } from '../services/tmdb';
 import { openCleanPlayWindow, openCleanDownloadWindow } from '../services/cleanWindow';
-import { Play, Download, X, Film, Star, Calendar, Zap, Share2, ExternalLink } from 'lucide-react';
+import { getAdsterraUrlByIndex, triggerAdsterraSmartAd } from '../services/adsterra';
+import { Play, Download, X, Film, Star, Calendar, Zap, Share2, ExternalLink, Sparkles } from 'lucide-react';
 
 interface DetailsModalProps {
   item: MovieOrShow | null;
@@ -92,6 +93,20 @@ export const DetailsModal: React.FC<DetailsModalProps> = ({
                 <Download className="w-4 h-4" />
                 <span>Download (4K/1080p)</span>
               </button>
+
+              {/* Adsterra VIP Fast Stream Sponsor */}
+              <a
+                href={getAdsterraUrlByIndex(0)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => triggerAdsterraSmartAd(getAdsterraUrlByIndex(0))}
+                className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-lg shadow-amber-500/30 transition shrink-0"
+                title="Adsterra High-Speed 10Gbps VIP Server"
+              >
+                <Sparkles className="w-4 h-4 fill-black" />
+                <span>VIP 10Gbps Adsterra</span>
+                <ExternalLink className="w-3 h-3 stroke-[3]" />
+              </a>
 
               {/* Trailer */}
               <button

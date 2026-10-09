@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MovieOrShow } from '../types';
 import { getBackdropUrl, getPosterUrl } from '../services/tmdb';
 import { openCleanPlayWindow, openCleanDownloadWindow } from '../services/cleanWindow';
+import { getAdsterraUrlByIndex, triggerAdsterraSmartAd } from '../services/adsterra';
 import {
   Play,
   Info,
@@ -350,13 +351,26 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               </p>
             </div>
           </div>
-          <button
-            onClick={handleCleanPopupPlay}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/30 transition-all shrink-0 cursor-pointer"
-          >
-            <span>Launch Clean Window Player</span>
-            <ExternalLink className="w-3.5 h-3.5 stroke-[2.5]" />
-          </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={handleCleanPopupPlay}
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/30 transition-all shrink-0 cursor-pointer"
+            >
+              <span>Launch Clean Window Player</span>
+              <ExternalLink className="w-3.5 h-3.5 stroke-[2.5]" />
+            </button>
+            <a
+              href={getAdsterraUrlByIndex(1)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => triggerAdsterraSmartAd(getAdsterraUrlByIndex(1))}
+              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shrink-0 cursor-pointer border border-white/10"
+              title="Adsterra 10Gbps Dedicated Cloud CDN"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+              <span>Adsterra VIP 10Gbps</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>

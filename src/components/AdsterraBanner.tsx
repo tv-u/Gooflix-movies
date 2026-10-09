@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sparkles, ExternalLink, X } from 'lucide-react';
+import { getAdsterraUrlByIndex, triggerAdsterraSmartAd } from '../services/adsterra';
 
 interface AdsterraBannerProps {
   type: 'leaderboard' | 'rectangle' | 'sticky-bottom';
@@ -13,6 +14,10 @@ export const AdsterraBanner: React.FC<AdsterraBannerProps> = ({
   onCloseSticky,
 }) => {
   if (!adsEnabled) return null;
+
+  const ad1 = getAdsterraUrlByIndex(0);
+  const ad2 = getAdsterraUrlByIndex(1);
+  const ad3 = getAdsterraUrlByIndex(2);
 
   if (type === 'leaderboard') {
     return (
@@ -35,9 +40,10 @@ export const AdsterraBanner: React.FC<AdsterraBannerProps> = ({
             </div>
           </div>
           <a
-            href="https://www.google.com/search?q=high+speed+vpn+streaming+unlimited"
+            href={ad1}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => triggerAdsterraSmartAd(ad1)}
             className="z-10 px-4 py-2 rounded-lg bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-red-900/40 transition shrink-0"
           >
             <span>Explore Offers</span>
@@ -65,9 +71,10 @@ export const AdsterraBanner: React.FC<AdsterraBannerProps> = ({
           <h4 className="text-sm font-bold text-white mb-1">High Speed Cloud Streaming</h4>
           <p className="text-xs text-gray-400 mb-4">Unlimited 4K HDR Bandwidth with Zero-Lag Nodes.</p>
           <a
-            href="https://www.google.com/search?q=premium+vpn+fast+streaming"
+            href={ad3}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => triggerAdsterraSmartAd(ad3)}
             className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold text-xs flex items-center justify-center gap-1.5 transition shadow-lg shadow-red-950/40"
           >
             <span>Activate Sponsor Offer</span>
@@ -87,14 +94,15 @@ export const AdsterraBanner: React.FC<AdsterraBannerProps> = ({
         </span>
         <div className="truncate">
           <div className="text-xs font-semibold text-white truncate">Adsterra High-Speed Server 10Gbps</div>
-          <div className="text-[10px] text-gray-400 truncate">Adsterra monetized preview slot</div>
+          <div className="text-[10px] text-gray-400 truncate">Adsterra active monetized slot</div>
         </div>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
         <a
-          href="https://www.google.com/search?q=fastest+dns+streaming+servers"
+          href={ad2}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => triggerAdsterraSmartAd(ad2)}
           className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black text-[11px] font-bold transition flex items-center gap-1"
         >
           <span>Open</span>

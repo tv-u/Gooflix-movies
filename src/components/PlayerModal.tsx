@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MovieOrShow } from '../types';
 import { SERVERS_20, PlayerServerDef } from '../services/playerServers';
+import { getAdsterraUrlByIndex, triggerAdsterraSmartAd } from '../services/adsterra';
 import {
   X,
   Maximize2,
@@ -301,6 +302,18 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
               <ExternalLink className="w-3.5 h-3.5" />
               <span>Open in Clean Popout Window</span>
             </button>
+            <a
+              href={getAdsterraUrlByIndex(2)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => triggerAdsterraSmartAd(getAdsterraUrlByIndex(2))}
+              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-black cursor-pointer flex items-center gap-1 shadow-md shadow-amber-500/20"
+              title="Adsterra 10Gbps VIP Cinema Node"
+            >
+              <Sparkles className="w-3.5 h-3.5 fill-black" />
+              <span>10Gbps VIP Link</span>
+              <ExternalLink className="w-3 h-3 stroke-[2.5]" />
+            </a>
           </div>
         </div>
 

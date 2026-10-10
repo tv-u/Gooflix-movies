@@ -135,10 +135,10 @@ export const MovieCard: React.FC<MovieCardProps> = ({
                   e.stopPropagation();
                   onOpenPopup(item);
                 }}
-                className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-emerald-600/20 hover:bg-emerald-600 text-emerald-400 hover:text-white border border-emerald-500/30 transition-colors cursor-pointer"
-                title="Open clean popup player"
+                className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-400/30 transition-colors cursor-pointer flex items-center gap-1"
+                title="Clean Window: Fast Play & Download"
               >
-                POPUP
+                <span>CLEAN</span>
               </button>
             )}
 

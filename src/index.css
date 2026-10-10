@@ -30,11 +30,88 @@
 }
 
 .animate-marquee {
-  display: inline-block;
+  display: inline-flex;
   white-space: nowrap;
-  animation: marquee 25s linear infinite;
+  animation: marquee 32s linear infinite;
+  will-change: transform;
 }
 .animate-marquee:hover {
   animation-play-state: paused;
+}
+
+@keyframes blink-badge {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.9), 0 3px 0 #7f1d1d;
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.96);
+    box-shadow: 0 0 2px rgba(239, 68, 68, 0.2), 0 1px 0 #7f1d1d;
+  }
+}
+
+.animate-blink-badge {
+  animation: blink-badge 1.1s ease-in-out infinite;
+}
+
+@keyframes neon-blink {
+  0%, 100% {
+    color: #fde047;
+    text-shadow: 0 0 8px rgba(250, 204, 21, 0.9), 0 0 18px rgba(239, 68, 68, 0.8);
+  }
+  50% {
+    color: #ffffff;
+    text-shadow: 0 0 2px rgba(250, 204, 21, 0.2);
+  }
+}
+
+.animate-neon-blink {
+  animation: neon-blink 1.4s ease-in-out infinite;
+}
+
+@keyframes beacon-ping {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.animate-beacon {
+  animation: beacon-ping 1.2s infinite;
+}
+
+/* 3D Visual Depth Utilities */
+.ticker-3d-bar {
+  background: linear-gradient(180deg, #3a0d11 0%, #1a0608 55%, #0d0304 100%);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -2px 4px rgba(0, 0, 0, 0.8);
+  border-bottom: 2px solid #dc2626;
+}
+
+.btn-3d-clean {
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 60%, #b45309 100%);
+  box-shadow: 0 3px 0 #78350f, 0 5px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(0);
+  transition: all 0.15s ease;
+}
+
+.btn-3d-clean:hover {
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 60%, #d97706 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #78350f, 0 8px 14px rgba(245, 158, 11, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.btn-3d-clean:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #78350f, 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 

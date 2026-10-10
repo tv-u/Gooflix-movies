@@ -159,10 +159,10 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
             <button
               onClick={popoutWindow}
               className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-black text-xs font-black flex items-center gap-1.5 shadow-md shadow-amber-500/30 transition cursor-pointer"
-              title="Open Clean Popup Window (Zero Ads)"
+              title="Open Clean Window Player"
             >
               <ExternalLink className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span className="hidden sm:inline">Clean Popup</span>
+              <span className="hidden sm:inline">Clean Window</span>
             </button>
 
             {/* Audio Track Selector */}

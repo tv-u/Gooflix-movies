@@ -165,6 +165,8 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
             key={currentItem.id}
             src={backdrop}
             alt={currentItem.title || currentItem.name}
+            loading="eager"
+            decoding="async"
             className="w-full h-full object-cover object-center sm:object-top transform scale-100 animate-fadeIn duration-700 opacity-65"
           />
           {/* Multi-layered Cinema Gradients for supreme legibility */}

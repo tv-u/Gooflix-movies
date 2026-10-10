@@ -24,6 +24,7 @@ import { LanguageModal } from './components/LanguageModal';
 import { ShareModal } from './components/ShareModal';
 import { SeoFooter } from './components/SeoFooter';
 import { MobileBottomNav } from './components/MobileBottomNav';
+import { EntryPopupNotification } from './components/EntryPopupNotification';
 import {
   Flame,
   Film,
@@ -87,6 +88,7 @@ export default function App() {
   const [shareMedia, setShareMedia] = useState<MovieOrShow | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [showEntryPopup, setShowEntryPopup] = useState<boolean>(true);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -206,10 +208,10 @@ export default function App() {
           fetchCategoryContent('k-drama', 'all', 1),
         ]);
 
-        setTrendingItems(trendingRes.items);
-        setNowPlayingItems(nowPlayingRes.items);
-        setBollywoodItems(bollywoodRes.items);
-        setTvPopularItems(tvRes.items);
+        setTrendingItems(deduplicateItems([], trendingRes.items));
+        setNowPlayingItems(deduplicateItems([], nowPlayingRes.items));
+        setBollywoodItems(deduplicateItems([], bollywoodRes.items));
+        setTvPopularItems(deduplicateItems([], tvRes.items));
 
         if (trendingRes.items.length > 0) {
           setHeroMedia(trendingRes.items[0]);
@@ -240,7 +242,7 @@ export default function App() {
         if (append) {
           setCategoryItems((prev) => deduplicateItems(prev, res.items));
         } else {
-          setCategoryItems(res.items);
+          setCategoryItems(deduplicateItems([], res.items));
         }
 
         setPage(res.page);
@@ -261,10 +263,38 @@ export default function App() {
     loadCategory(activeCategory, activeSouthSubcategory, 1, false);
   }, [activeCategory, activeSouthSubcategory, loadCategory]);
 
-  // Unlimited Upstream Pagination: Load More
+  // Unlimited Upstream Pagination: Load More (Appends)
   const handleLoadMoreCategory = () => {
     if (page < totalPages && !isLoadingMore) {
       loadCategory(activeCategory, activeSouthSubcategory, page + 1, true);
+    }
+  };
+
+  // Unlimited Next Page Navigation (Smoothly transitions to next page of 20 titles)
+  const handleNextPageCategory = () => {
+    if (page < totalPages && !isLoadingCategory) {
+      const nextPage = page + 1;
+      loadCategory(activeCategory, activeSouthSubcategory, nextPage, false);
+      const elem = document.getElementById('category-movies-section');
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 400, behavior: 'smooth' });
+      }
+    }
+  };
+
+  // Unlimited Previous Page Navigation
+  const handlePrevPageCategory = () => {
+    if (page > 1 && !isLoadingCategory) {
+      const prevPage = page - 1;
+      loadCategory(activeCategory, activeSouthSubcategory, prevPage, false);
+      const elem = document.getElementById('category-movies-section');
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 400, behavior: 'smooth' });
+      }
     }
   };
 
@@ -275,7 +305,12 @@ export default function App() {
     if (!isNaN(p) && p >= 1 && p <= totalPages) {
       loadCategory(activeCategory, activeSouthSubcategory, p, false);
       setJumpPageInput('');
-      window.scrollTo({ top: 400, behavior: 'smooth' });
+      const elem = document.getElementById('category-movies-section');
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: 400, behavior: 'smooth' });
+      }
     }
   };
 
@@ -590,8 +625,8 @@ export default function App() {
                 onSelectSouthSubcategory={setActiveSouthSubcategory}
               />
 
-              {/* Category Content Grid */}
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              {/* Category Content Grid with Section ID */}
+              <div id="category-movies-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 scroll-mt-24">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-white/10 mb-6 gap-3">
                   <div>
                     <h3 className="text-lg font-black text-white flex items-center gap-2">
@@ -605,7 +640,7 @@ export default function App() {
 
                   <div className="flex items-center gap-3 text-xs">
                     <span className="font-mono text-gray-400 bg-white/5 px-2.5 py-1 rounded-lg">
-                      Upstream Page {page} of {totalPages}
+                      Page {page} of {totalPages}
                     </span>
                     <span className="text-emerald-400 font-semibold hidden sm:inline">
                       • {categoryItems.length} Titles Loaded
@@ -643,34 +678,62 @@ export default function App() {
                     {/* Sentinel for auto infinite scrolling */}
                     <div ref={sentinelRef} className="h-6 w-full" />
 
-                    {/* Pagination Toolbar */}
-                    <div className="mt-8 flex flex-col items-center justify-center gap-4">
-                      <div className="flex items-center gap-3 flex-wrap justify-center">
+                    {/* Enhanced Unlimited Load More & Next Button Toolbar */}
+                    <div className="mt-10 flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-white/[0.07] to-white/[0.02] border border-white/15 rounded-3xl p-5 sm:p-6 max-w-3xl mx-auto shadow-2xl backdrop-blur-xl">
+                      <div className="text-center space-y-1">
+                        <span className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center justify-center gap-1.5">
+                          <Sparkles className="w-4 h-4 text-amber-400" />
+                          <span>Unlimited Continuous Stream ({categoryItems.length} Titles Loaded)</span>
+                        </span>
+                        <p className="text-[11px] text-gray-400">
+                          Verified TMDB API Stream • Page {page} of {totalPages} (Unlimited Pages)
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3 flex-wrap justify-center w-full">
+                        {/* Previous Page Button */}
                         {page > 1 && (
                           <button
-                            onClick={() => loadCategory(activeCategory, activeSouthSubcategory, page - 1, false)}
-                            className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                            onClick={handlePrevPageCategory}
+                            disabled={isLoadingCategory}
+                            className="px-4 sm:px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer disabled:opacity-40"
+                            title="Previous Page / पिछला पेज"
                           >
-                            <ChevronLeft className="w-4 h-4" />
-                            <span>Previous Page</span>
+                            <ChevronLeft className="w-4 h-4 stroke-[3]" />
+                            <span>Previous (पिछला पेज)</span>
                           </button>
                         )}
 
+                        {/* Dedicated 3D Highlight Next Page Button */}
+                        {page < totalPages && (
+                          <button
+                            onClick={handleNextPageCategory}
+                            disabled={isLoadingCategory}
+                            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xl shadow-red-600/50 hover:shadow-red-600/70 border border-white/20 transition-all transform active:scale-95 cursor-pointer disabled:opacity-50"
+                            title="Next Page / अगला पेज (अनलिमिटेड)"
+                          >
+                            <span>Next Page (अगला पेज ❯)</span>
+                            <ChevronRight className="w-4 h-4 stroke-[3]" />
+                          </button>
+                        )}
+
+                        {/* Load More Continuous Button */}
                         {page < totalPages && (
                           <button
                             onClick={handleLoadMoreCategory}
                             disabled={isLoadingMore}
-                            className="px-8 py-3 rounded-2xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold text-xs flex items-center gap-2 shadow-xl shadow-red-950/50 transition cursor-pointer disabled:opacity-50"
+                            className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer disabled:opacity-50"
+                            title="Continuous Load More (और फिल्में लोड करें)"
                           >
                             {isLoadingMore ? (
                               <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                <span>Streaming Next Upstream Page...</span>
+                                <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                <span>Loading...</span>
                               </>
                             ) : (
                               <>
-                                <Sparkles className="w-4 h-4 text-amber-200" />
-                                <span>Load Next 20 Titles (Page {page + 1})</span>
+                                <Zap className="w-4 h-4 fill-amber-300 text-amber-300" />
+                                <span>+ Load More (और लोड करें)</span>
                               </>
                             )}
                           </button>
@@ -685,19 +748,20 @@ export default function App() {
                             max={totalPages}
                             value={jumpPageInput}
                             onChange={(e) => setJumpPageInput(e.target.value)}
-                            className="w-16 bg-[#161824] border border-white/10 rounded-xl px-2 py-2 text-center text-white text-xs focus:outline-none focus:border-red-500"
+                            className="w-16 bg-[#161824] border border-white/15 rounded-xl px-2 py-2.5 text-center text-white text-xs focus:outline-none focus:border-red-500 font-mono"
                           />
                           <button
                             type="submit"
-                            className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold cursor-pointer transition"
+                            className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold cursor-pointer transition border border-white/10"
                           >
                             Go
                           </button>
                         </form>
                       </div>
 
-                      <div className="text-[11px] text-gray-500 font-mono">
-                        Unlimited TMDB Upstream Pagination Enabled • {page} of {totalPages}
+                      <div className="flex items-center justify-between w-full text-[11px] text-gray-500 pt-2 border-t border-white/5">
+                        <span>Auto-Scroll: {autoInfiniteScroll ? '🟢 Active' : '⚪ Paused'}</span>
+                        <span>Showing {categoryItems.length} Titles</span>
                       </div>
                     </div>
                   </>
@@ -758,41 +822,89 @@ export default function App() {
                   <div ref={sentinelRef} className="h-6 w-full" />
 
                   {/* Unlimited Pagination Controls */}
-                  <div className="mt-12 flex flex-col items-center justify-center gap-3">
-                    <div className="flex items-center gap-3 flex-wrap justify-center">
+                  <div className="mt-12 flex flex-col items-center justify-center gap-4 bg-gradient-to-b from-white/[0.07] to-white/[0.02] border border-white/15 rounded-3xl p-5 sm:p-6 max-w-3xl mx-auto shadow-2xl backdrop-blur-xl">
+                    <div className="text-center space-y-1">
+                      <span className="text-xs font-black text-amber-400 uppercase tracking-wider flex items-center justify-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-amber-400" />
+                        <span>Unlimited Continuous Stream ({categoryItems.length} Titles Loaded)</span>
+                      </span>
+                      <p className="text-[11px] text-gray-400">
+                        Page {page} of {totalPages} • Auto-Infinite Scroll Active (Unlimited Pages)
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 flex-wrap justify-center w-full">
+                      {/* Previous Page Button */}
                       {page > 1 && (
                         <button
-                          onClick={() => loadCategory(activeCategory, activeSouthSubcategory, page - 1, false)}
-                          className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                          onClick={handlePrevPageCategory}
+                          disabled={isLoadingCategory}
+                          className="px-4 sm:px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 text-white text-xs font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer disabled:opacity-40"
+                          title="Previous Page / पिछला पेज"
                         >
-                          <ChevronLeft className="w-4 h-4" />
-                          <span>Previous Page</span>
+                          <ChevronLeft className="w-4 h-4 stroke-[3]" />
+                          <span>Previous (पिछला पेज)</span>
                         </button>
                       )}
 
+                      {/* Dedicated 3D Highlight Next Page Button */}
+                      {page < totalPages && (
+                        <button
+                          onClick={handleNextPageCategory}
+                          disabled={isLoadingCategory}
+                          className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-amber-500 hover:from-red-500 hover:to-amber-400 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xl shadow-red-600/50 hover:shadow-red-600/70 border border-white/20 transition-all transform active:scale-95 cursor-pointer disabled:opacity-50"
+                          title="Next Page / अगला पेज (अनलिमिटेड)"
+                        >
+                          <span>Next Page (अगला पेज ❯)</span>
+                          <ChevronRight className="w-4 h-4 stroke-[3]" />
+                        </button>
+                      )}
+
+                      {/* Load More Continuous Button */}
                       {page < totalPages && (
                         <button
                           onClick={handleLoadMoreCategory}
                           disabled={isLoadingMore}
-                          className="px-8 py-3 rounded-2xl bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold text-xs flex items-center gap-2 shadow-xl shadow-red-950/50 transition cursor-pointer disabled:opacity-50"
+                          className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/15 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer disabled:opacity-50"
+                          title="Continuous Load More (और फिल्में लोड करें)"
                         >
                           {isLoadingMore ? (
                             <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              <span>Loading Next Upstream Page...</span>
+                              <Loader2 className="w-4 h-4 animate-spin text-white" />
+                              <span>Loading...</span>
                             </>
                           ) : (
                             <>
-                              <Sparkles className="w-4 h-4 text-amber-200" />
-                              <span>Load Next 20 Titles (Page {page + 1} of {totalPages})</span>
+                              <Zap className="w-4 h-4 fill-amber-300 text-amber-300" />
+                              <span>+ Load More (और लोड करें)</span>
                             </>
                           )}
                         </button>
                       )}
+
+                      {/* Jump to page form */}
+                      <form onSubmit={handleJumpToPage} className="flex items-center gap-1.5 text-xs">
+                        <input
+                          type="number"
+                          placeholder="Page #"
+                          min="1"
+                          max={totalPages}
+                          value={jumpPageInput}
+                          onChange={(e) => setJumpPageInput(e.target.value)}
+                          className="w-16 bg-[#161824] border border-white/15 rounded-xl px-2 py-2.5 text-center text-white text-xs focus:outline-none focus:border-red-500 font-mono"
+                        />
+                        <button
+                          type="submit"
+                          className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold cursor-pointer transition border border-white/10"
+                        >
+                          Go
+                        </button>
+                      </form>
                     </div>
 
-                    <div className="text-[11px] text-gray-500 font-mono">
-                      Continuous Upstream Stream • Page {page} of {totalPages}
+                    <div className="flex items-center justify-between w-full text-[11px] text-gray-500 pt-2 border-t border-white/5">
+                      <span>Continuous Stream • Page {page} of {totalPages}</span>
+                      <span>{categoryItems.length} Titles in Memory</span>
                     </div>
                   </div>
                 </>
@@ -868,6 +980,17 @@ export default function App() {
         selectedLang={currentLang}
         onSelectLang={handleSelectLang}
       />
+
+      {/* 5-SECOND FULLSCREEN 3D NOTIFICATION POPUP (Requested by user) */}
+      {showEntryPopup && (
+        <EntryPopupNotification
+          onClose={() => setShowEntryPopup(false)}
+          onOpenCleanWindowGuide={() => {
+            setShowEntryPopup(false);
+            handleOpenMandatoryPage('cleanwindow_guide');
+          }}
+        />
+      )}
 
       {/* STICKY SMART ADSTERRA ON MOBILE */}
       {showStickyAd && (

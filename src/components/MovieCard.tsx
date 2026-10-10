@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MovieOrShow } from '../types';
 import { getPosterUrl } from '../services/tmdb';
-import { Play, Plus, Check, Mic, Trophy } from 'lucide-react';
+import { Play, Plus, Check, Mic, Trophy, Sparkles } from 'lucide-react';
 
 interface MovieCardProps {
   item: MovieOrShow;
@@ -12,6 +12,9 @@ interface MovieCardProps {
   onToggleWatchlist: (item: MovieOrShow) => void;
 }
 
+// In-memory cache for loaded image URLs to guarantee 0-ms re-renders
+const loadedImagesCache = new Set<string>();
+
 export const MovieCard: React.FC<MovieCardProps> = ({
   item,
   onPlay,
@@ -20,30 +23,79 @@ export const MovieCard: React.FC<MovieCardProps> = ({
   isInWatchlist,
   onToggleWatchlist,
 }) => {
-  const poster = getPosterUrl(item.poster_path, 'w500');
+  // Ultra-fast w342 image for high-speed CDN loading
+  const poster = getPosterUrl(item.poster_path, 'w342');
   const title = item.title || item.name || 'Untitled';
   const year = (item.release_date || item.first_air_date || '').slice(0, 4);
   const rating = item.vote_average ? item.vote_average.toFixed(1) : '7.5';
   const isTv = item.media_type === 'tv' || (!item.title && !!item.name);
 
+  // Fast image load state
+  const isAlreadyLoaded = loadedImagesCache.has(poster);
+  const [imageLoaded, setImageLoaded] = useState<boolean>(isAlreadyLoaded);
+  const [imageError, setImageError] = useState<boolean>(false);
+
   // Top 100 Rank styling
   const rank = item.rank;
   const isTop3 = rank && rank <= 3;
 
+  const handleImageLoad = () => {
+    loadedImagesCache.add(poster);
+    setImageLoaded(true);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
   return (
     <div className="group relative select-none flex flex-col justify-between w-full">
-      {/* Poster with Play Overlay */}
+      {/* Poster with Play Overlay & Fast Shimmer Skeleton - Click opens Movie Details & Download Window */}
       <div
-        onClick={() => onPlay(item)}
-        className="relative aspect-[2/3] rounded-2xl overflow-hidden bg-[#181a24] border border-white/5 group-hover:border-red-500/60 shadow-lg group-hover:shadow-2xl group-hover:shadow-red-950/40 transition-all duration-300 cursor-pointer"
+        onClick={() => onOpenDetails(item)}
+        className="relative aspect-[2/3] rounded-2xl overflow-hidden bg-[#151722] border border-white/5 group-hover:border-red-500/60 shadow-lg group-hover:shadow-2xl group-hover:shadow-red-950/40 transition-all duration-300 cursor-pointer"
       >
-        <img
-          src={poster}
-          alt={title}
-          loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent opacity-60 group-hover:opacity-90 transition-opacity" />
+        {/* Instant Shimmer Placeholder while loading */}
+        {!imageLoaded && !imageError && (
+          <div className="absolute inset-0 bg-gradient-to-tr from-[#12141f] via-[#1a1c2a] to-[#12141f] animate-pulse flex items-center justify-center">
+            <span className="text-[10px] font-black text-gray-500 tracking-wider">GOO TV</span>
+          </div>
+        )}
+
+        {/* High-speed decoded original studio poster */}
+        {poster && !imageError ? (
+          <img
+            src={poster}
+            alt={title}
+            loading="lazy"
+            decoding="async"
+            onLoad={handleImageLoad}
+            onError={handleImageError}
+            className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-300 ${
+              imageLoaded ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+        ) : (
+          /* Authentic Movie-Branded Card for this exact movie - Never an unrelated photo */
+          <div className="w-full h-full flex flex-col justify-between p-3.5 bg-gradient-to-b from-[#181a29] via-[#10121d] to-[#0a0b12] text-white select-none border border-white/10">
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="font-black text-red-500 tracking-wider">GOO TV</span>
+              <span className="text-amber-400 font-bold">★ {rating}</span>
+            </div>
+            <div className="text-center py-4 my-auto">
+              <h4 className="text-sm sm:text-base font-black text-white line-clamp-3 leading-snug drop-shadow-md">
+                {title}
+              </h4>
+              <p className="text-[11px] font-bold text-gray-400 mt-1.5">{year || '2025'} • {isTv ? 'Series' : 'Movie'}</p>
+            </div>
+            <div className="flex items-center justify-between text-[9px] text-gray-400 pt-2 border-t border-white/10">
+              <span className="px-1.5 py-0.5 rounded bg-white/10 text-white font-bold uppercase">Original</span>
+              <span className="text-emerald-400 font-black">4K UHD</span>
+            </div>
+          </div>
+        )}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/25 to-transparent opacity-60 group-hover:opacity-90 transition-opacity" />
 
         {/* Top Badges */}
         <div className="absolute top-2 inset-x-2 flex items-center justify-between pointer-events-none text-[9px] font-black z-10 gap-1">
@@ -114,7 +166,7 @@ export const MovieCard: React.FC<MovieCardProps> = ({
       </div>
 
       {/* Info & Bottom Quick Action Buttons */}
-      <div className="mt-2.5 px-0.5">
+      <div className="mt-2 px-0.5">
         <h4
           onClick={() => onOpenDetails(item)}
           className="text-xs sm:text-sm font-extrabold text-white group-hover:text-red-400 truncate cursor-pointer transition"
@@ -135,9 +187,10 @@ export const MovieCard: React.FC<MovieCardProps> = ({
                   e.stopPropagation();
                   onOpenPopup(item);
                 }}
-                className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-400/30 transition-colors cursor-pointer flex items-center gap-1"
+                className="text-[9px] font-black px-1.5 py-0.5 rounded-md bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-400/30 transition-colors cursor-pointer flex items-center gap-0.5"
                 title="Clean Window: Fast Play & Download"
               >
+                <Sparkles className="w-2.5 h-2.5" />
                 <span>CLEAN</span>
               </button>
             )}

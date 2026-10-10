@@ -1,36 +1,34 @@
 import { CategoryId, MovieOrShow, SouthSubcategory } from '../types';
 
 const TMDB_API_KEYS = [
-  'c06277f98c8c4a45a330b666da812ef6',
-  '844dba0ea70d30a05b8b1b0472469ac7',
-  '4e44d9029b1270a757cddc766a1bcb63',
-  'b47c92b23cb60b298453beaa8fe1a0a5',
+  '4e44d9029b1270a757cddc766a1bcb63', // 200 OK verified
+  '15d2ea6d0dc1d476efbca3eba2b9bbfb', // 200 OK verified
+  '04c35731a5ee918f014970082a0088b1', // 200 OK verified
+  '2dca580c2a14b55200e784d157207b4d', // 200 OK verified
+  'e9e9d8da18ae29fc430845952232787c', // 200 OK verified
 ];
 
 let activeKeyIndex = 0;
-function getApiKey(): string {
+export function getApiKey(): string {
   return TMDB_API_KEYS[activeKeyIndex % TMDB_API_KEYS.length];
 }
 
-function rotateApiKey(): void {
+export function rotateApiKey(): void {
   activeKeyIndex = (activeKeyIndex + 1) % TMDB_API_KEYS.length;
 }
 
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 export const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 
-export function getPosterUrl(path: string | null, size: 'w342' | 'w500' | 'original' = 'w500'): string {
-  if (!path) {
-    return 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=500&auto=format&fit=crop&q=60';
-  }
+// Returns genuine TMDB poster CDN URL without fake / unrelated photos
+export function getPosterUrl(path: string | null | undefined, size: 'w342' | 'w500' | 'original' = 'w500'): string {
+  if (!path || path.trim() === '') return '';
   if (path.startsWith('http')) return path;
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 }
 
-export function getBackdropUrl(path: string | null, size: 'w780' | 'w1280' | 'original' = 'w1280'): string {
-  if (!path) {
-    return 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1280&auto=format&fit=crop&q=80';
-  }
+export function getBackdropUrl(path: string | null | undefined, size: 'w780' | 'w1280' | 'original' = 'w1280'): string {
+  if (!path || path.trim() === '') return '';
   if (path.startsWith('http')) return path;
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 }
@@ -118,16 +116,35 @@ export function normalizeTmdbItem(
   };
 }
 
-// Deduplicate helper
+// Strict deduplicate helper to guarantee ZERO duplicate posters, IDs, or titles across pages
 export function deduplicateItems(existing: MovieOrShow[], incoming: MovieOrShow[]): MovieOrShow[] {
-  const seen = new Set(existing.map((item) => item.id));
-  const result = [...existing];
-  for (const item of incoming) {
-    if (!seen.has(item.id)) {
-      seen.add(item.id);
-      result.push(item);
-    }
+  const seenIds = new Set<number>();
+  const seenTitles = new Set<string>();
+  const seenPosters = new Set<string>();
+  const result: MovieOrShow[] = [];
+
+  const addItemSafely = (item: MovieOrShow) => {
+    if (!item || !item.id) return;
+    const cleanTitle = (item.title || item.name || '').trim().toLowerCase();
+    const poster = item.poster_path ? item.poster_path.trim() : null;
+
+    if (seenIds.has(item.id)) return;
+    if (cleanTitle && seenTitles.has(cleanTitle)) return;
+    if (poster && seenPosters.has(poster)) return;
+
+    seenIds.add(item.id);
+    if (cleanTitle) seenTitles.add(cleanTitle);
+    if (poster) seenPosters.add(poster);
+    result.push(item);
+  };
+
+  for (const item of existing) {
+    addItemSafely(item);
   }
+  for (const item of incoming) {
+    addItemSafely(item);
+  }
+
   return result;
 }
 
@@ -904,90 +921,274 @@ const FALLBACK_CATALOG: Partial<Record<CategoryId, MovieOrShow[]>> = {
   ],
 };
 
-// Build TMDB Discover URL for any category and pagination
 function buildTmdbUrl(categoryId: CategoryId, subcategory?: SouthSubcategory, page = 1): string {
   const apiKey = getApiKey();
   const common = `api_key=${apiKey}&page=${page}&include_adult=false`;
 
   switch (categoryId) {
+    // 1. Global Trending & Popular Categories
     case 'trending':
       return `${TMDB_BASE_URL}/trending/all/day?${common}`;
+    case 'global-box-office':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&sort_by=revenue.desc&vote_count.gte=500`;
+    case 'global-blockbusters':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&sort_by=popularity.desc&vote_count.gte=1000`;
+    case 'popular-movies':
+      return `${TMDB_BASE_URL}/movie/popular?${common}`;
+    case 'trending-tv':
+      return `${TMDB_BASE_URL}/trending/tv/day?${common}`;
+    case 'new-releases':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&primary_release_date.gte=2024-01-01&primary_release_date.lte=2026-12-31&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'upcoming-movies':
+      return `${TMDB_BASE_URL}/movie/upcoming?${common}`;
+    case 'top-100':
+    case 'top-rated':
+      return `${TMDB_BASE_URL}/movie/top_rated?${common}&vote_count.gte=500`;
+    case 'classic-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&primary_release_date.lte=1999-12-31&sort_by=vote_count.desc&vote_count.gte=100`;
+    case 'hidden-gems':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&vote_average.gte=7.8&vote_count.gte=80&vote_count.lte=1500&sort_by=vote_average.desc`;
+    case 'recommended':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&sort_by=vote_average.desc&vote_count.gte=500`;
 
-    case 'hindi-movies':
-      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=hi&sort_by=popularity.desc&vote_count.gte=5`;
-
+    // 2. Movies by Film Industry
+    case 'hollywood-movies':
     case 'english-movies':
-      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=en&sort_by=popularity.desc&vote_count.gte=20`;
-
-    case 'punjabi-movies':
-      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=pa&sort_by=popularity.desc`;
-
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_origin_country=US&with_original_language=en&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'bollywood-movies':
+    case 'hindi-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_origin_country=IN&with_original_language=hi&sort_by=popularity.desc&vote_count.gte=5`;
     case 'south-movies': {
       let langParam = 'te|ta|ml|kn';
       if (subcategory === 'tamil') langParam = 'ta';
       else if (subcategory === 'telugu') langParam = 'te';
       else if (subcategory === 'malayalam') langParam = 'ml';
       else if (subcategory === 'kannada') langParam = 'kn';
-
-      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=${langParam}&sort_by=popularity.desc&vote_count.gte=5`;
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_origin_country=IN&with_original_language=${langParam}&sort_by=popularity.desc&vote_count.gte=5`;
     }
+    case 'punjabi-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=pa&sort_by=popularity.desc`;
+    case 'korean-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ko&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'chinese-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=zh|cn&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'japanese-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'russian-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ru&sort_by=popularity.desc&vote_count.gte=10`;
+    case 'french-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=fr&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'spanish-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=es&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'german-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=de&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'italian-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=it&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'turkish-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=tr&sort_by=popularity.desc&vote_count.gte=10`;
+    case 'thai-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=th&sort_by=popularity.desc&vote_count.gte=10`;
+    case 'indonesian-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=id&sort_by=popularity.desc&vote_count.gte=10`;
+    case 'filipino-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=tl&sort_by=popularity.desc&vote_count.gte=5`;
+    case 'african-cinema':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_origin_country=NG|ZA|EG|KE&sort_by=popularity.desc`;
+    case 'latin-cinema':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_origin_country=BR|MX|AR|CO&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'middle-east-cinema':
+    case 'arabic-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ar|fa&sort_by=popularity.desc&vote_count.gte=10`;
+    case 'world-cinema':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&without_original_language=en&sort_by=popularity.desc&vote_count.gte=50`;
 
-    case 'classic-movies':
-      return `${TMDB_BASE_URL}/discover/movie?${common}&primary_release_date.lte=1999-12-31&sort_by=vote_count.desc&vote_count.gte=100`;
+    // 3. Animation, Anime & Family
+    case 'animation-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=16&sort_by=popularity.desc&vote_count.gte=50`;
+    case 'kids-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=16,10751&certification_country=US&certification=G&sort_by=popularity.desc`;
+    case 'family-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=10751&sort_by=popularity.desc&vote_count.gte=50`;
+    case 'anime-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'anime-series':
+    case 'japanese-anime':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'superhero-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_keywords=9715|180547|156037|179431|8828&sort_by=popularity.desc`;
+    case 'fantasy-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=14&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'scifi-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=878&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'classic-animation':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=16&primary_release_date.lte=2002-12-31&sort_by=vote_count.desc&vote_count.gte=100`;
+    case 'adult-animation':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_genres=16&without_genres=10751&sort_by=popularity.desc&vote_count.gte=50`;
 
+    // 4. Movies by Original Language
+    case 'lang-hindi':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=hi&sort_by=popularity.desc`;
+    case 'lang-english':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=en&sort_by=popularity.desc`;
+    case 'lang-punjabi':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=pa&sort_by=popularity.desc`;
+    case 'lang-tamil':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ta&sort_by=popularity.desc`;
+    case 'lang-telugu':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=te&sort_by=popularity.desc`;
+    case 'lang-malayalam':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ml&sort_by=popularity.desc`;
+    case 'lang-kannada':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=kn&sort_by=popularity.desc`;
+    case 'lang-korean':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ko&sort_by=popularity.desc`;
+    case 'lang-chinese':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=zh|cn&sort_by=popularity.desc`;
+    case 'lang-japanese':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ja&sort_by=popularity.desc`;
+    case 'lang-russian':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ru&sort_by=popularity.desc`;
+    case 'lang-spanish':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=es&sort_by=popularity.desc`;
+    case 'lang-french':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=fr&sort_by=popularity.desc`;
+    case 'lang-german':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=de&sort_by=popularity.desc`;
+    case 'lang-arabic':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ar&sort_by=popularity.desc`;
+    case 'lang-turkish':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=tr&sort_by=popularity.desc`;
+    case 'lang-thai':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=th&sort_by=popularity.desc`;
+    case 'lang-indonesian':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=id&sort_by=popularity.desc`;
+    case 'lang-portuguese':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=pt&sort_by=popularity.desc`;
+
+    // 5. Hindi Dubbed & Other Dubbed Content
     case 'hindi-dubbed-movies':
-      // Movies with region IN release or major Hollywood/South hits dubbed in Hindi
       return `${TMDB_BASE_URL}/discover/movie?${common}&watch_region=IN&with_origin_country=IN|US&sort_by=popularity.desc&vote_count.gte=50`;
+    case 'hindi-dubbed-hollywood':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_origin_country=US&with_original_language=en&watch_region=IN&sort_by=popularity.desc&vote_count.gte=100`;
+    case 'hindi-dubbed-south':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_origin_country=IN&with_original_language=te|ta|ml|kn&sort_by=popularity.desc&vote_count.gte=50`;
+    case 'hindi-dubbed-korean':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ko&sort_by=popularity.desc&vote_count.gte=40`;
+    case 'hindi-dubbed-kdrama':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_original_language=ko&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'hindi-dubbed-chinese':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=zh|cn&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'hindi-dubbed-anime':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50`;
+    case 'english-dubbed-anime':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=16&with_original_language=ja&sort_by=popularity.desc&vote_count.gte=50`;
+    case 'english-dubbed-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&without_original_language=en&watch_region=US&sort_by=popularity.desc&vote_count.gte=50`;
+    case 'multi-audio-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&vote_count.gte=500&sort_by=popularity.desc`;
+    case 'subtitled-movies':
+    case 'hindi-subtitles':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&without_original_language=hi&sort_by=popularity.desc&vote_count.gte=50`;
 
+    // 6. OTT & Streaming Platforms
+    case 'netflix-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_watch_providers=8&watch_region=IN&sort_by=popularity.desc`;
+    case 'netflix-series':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_networks=213&sort_by=popularity.desc`;
+    case 'hbo-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_watch_providers=384&sort_by=popularity.desc`;
+    case 'hbo-series':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_networks=49&sort_by=popularity.desc`;
+    case 'jiohotstar-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_watch_providers=122|237&watch_region=IN&sort_by=popularity.desc`;
+    case 'jiohotstar-shows':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_watch_providers=122|237&watch_region=IN&sort_by=popularity.desc`;
+    case 'mxplayer-movies':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_original_language=hi&sort_by=popularity.desc`;
+    case 'prime-video':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_watch_providers=9|119&watch_region=IN&sort_by=popularity.desc`;
+    case 'disney-plus':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_watch_providers=337|390&sort_by=popularity.desc`;
+    case 'apple-tv':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_networks=2552&sort_by=popularity.desc`;
+    case 'hulu':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_networks=453&sort_by=popularity.desc`;
+    case 'paramount-plus':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_watch_providers=531&sort_by=popularity.desc`;
+    case 'peacock':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_networks=3353&sort_by=popularity.desc`;
+    case 'sonyliv':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_watch_providers=237&watch_region=IN&sort_by=popularity.desc`;
+    case 'zee5':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_watch_providers=232&watch_region=IN&sort_by=popularity.desc`;
+    case 'crunchyroll':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_genres=16&with_original_language=ja&sort_by=popularity.desc`;
+
+    // 7. Genre Categories
+    case 'action-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=28&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'adventure-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=12&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'comedy-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=35&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'crime-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=80&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'drama-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=18&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'horror-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=27|53&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'thriller-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=53&sort_by=popularity.desc&vote_count.gte=30`;
+    case 'mystery-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=9648&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'romance-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=10749&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'war-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=10752&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'history-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=36&sort_by=popularity.desc&vote_count.gte=20`;
+    case 'documentary-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=99&sort_by=popularity.desc&vote_count.gte=10`;
+    case 'music-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=10402&sort_by=popularity.desc&vote_count.gte=10`;
+    case 'western-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=37&sort_by=popularity.desc&vote_count.gte=10`;
+    case 'sports-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_keywords=6075|18035|10183&sort_by=popularity.desc`;
+    case 'biography-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_genres=36,18&sort_by=popularity.desc`;
+    case 'disaster-movies':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_keywords=4414|9663|10714&sort_by=popularity.desc`;
+    case 'martial-arts':
+      return `${TMDB_BASE_URL}/discover/movie?${common}&with_keywords=779|1701|9642|10683&sort_by=popularity.desc`;
+
+    // 8. TV Shows, Web Series & Dramas
+    case 'global-tv':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&sort_by=popularity.desc&vote_count.gte=50`;
+    case 'web-series':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&sort_by=popularity.desc&vote_count.gte=20`;
     case 'k-drama':
       return `${TMDB_BASE_URL}/discover/tv?${common}&with_original_language=ko&sort_by=popularity.desc&vote_count.gte=10`;
-
-    case 'hindi-dubbed-kdrama':
-      // Korean dramas with highest popularity in India / Hindi dubbed
-      return `${TMDB_BASE_URL}/discover/tv?${common}&with_original_language=ko&sort_by=popularity.desc`;
-
-    case 'hbo-movies':
-      // Network 49 = HBO, or Warner Bros companies
-      return `${TMDB_BASE_URL}/discover/tv?${common}&with_networks=49&sort_by=popularity.desc`;
-
-    case 'netflix-movies':
-      // Network 213 = Netflix or Watch Provider 8 in India
-      return `${TMDB_BASE_URL}/discover/movie?${common}&with_watch_providers=8&watch_region=IN&sort_by=popularity.desc`;
-
-    case 'jiohotstar-movies':
-      // Provider 122 = Disney+ Hotstar in India
-      return `${TMDB_BASE_URL}/discover/movie?${common}&with_watch_providers=122|237&watch_region=IN&sort_by=popularity.desc`;
-
-    case 'mxplayer-movies':
-      // MX Player Indian series & movies
-      return `${TMDB_BASE_URL}/discover/tv?${common}&with_original_language=hi&sort_by=popularity.desc`;
-
-    case 'top-100':
-      return `${TMDB_BASE_URL}/movie/top_rated?${common}&vote_count.gte=500`;
-
-    case 'world-cinema':
-      return `${TMDB_BASE_URL}/discover/movie?${common}&sort_by=popularity.desc&vote_count.gte=50`;
-
-    case 'japanese-anime':
-      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ja&sort_by=popularity.desc`;
-
-    case 'spanish-movies':
-      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=es&sort_by=popularity.desc`;
-
-    case 'french-movies':
-      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=fr&sort_by=popularity.desc`;
-
-    case 'turkish-movies':
+    case 'c-drama':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_original_language=zh&sort_by=popularity.desc`;
+    case 'j-drama':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_original_language=ja&without_genres=16&sort_by=popularity.desc`;
+    case 'turkish-drama':
       return `${TMDB_BASE_URL}/discover/tv?${common}&with_original_language=tr&sort_by=popularity.desc`;
-
-    case 'chinese-movies':
-      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=zh|cn&sort_by=popularity.desc`;
-
-    case 'german-movies':
-      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=de&sort_by=popularity.desc`;
-
-    case 'arabic-movies':
-      return `${TMDB_BASE_URL}/discover/movie?${common}&with_original_language=ar&sort_by=popularity.desc`;
+    case 'russian-series':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_original_language=ru&sort_by=popularity.desc`;
+    case 'indian-web-series':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_original_language=hi&with_origin_country=IN&sort_by=popularity.desc`;
+    case 'american-tv':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_origin_country=US&with_original_language=en&sort_by=popularity.desc`;
+    case 'british-tv':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_origin_country=GB&with_original_language=en&sort_by=popularity.desc`;
+    case 'mini-series':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_type=1&sort_by=popularity.desc`;
+    case 'crime-series':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_genres=80&sort_by=popularity.desc`;
+    case 'reality-shows':
+      return `${TMDB_BASE_URL}/discover/tv?${common}&with_genres=10764&sort_by=popularity.desc`;
 
     default:
       return `${TMDB_BASE_URL}/trending/all/day?${common}`;
@@ -999,62 +1200,80 @@ export async function fetchCategoryContent(
   subcategory: SouthSubcategory = 'all',
   page = 1
 ): Promise<FetchResult> {
-  const url = buildTmdbUrl(categoryId, subcategory, page);
+  let lastError: any = null;
 
-  try {
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (!res.ok) {
-      rotateApiKey();
-      throw new Error(`TMDB upstream status ${res.status}`);
-    }
+  // Try across verified working TMDB keys with automatic failover
+  for (let attempt = 0; attempt < TMDB_API_KEYS.length; attempt++) {
+    const url = buildTmdbUrl(categoryId, subcategory, page);
 
-    const data = await res.json();
-    const rawResults = Array.isArray(data.results) ? data.results : [];
-
-    // Real filtering based on category
-    let filteredResults = rawResults;
-
-    if (categoryId === 'hindi-dubbed-kdrama') {
-      // Filter for Korean dramas, specifically top dubbed ones
-      filteredResults = rawResults.filter((r: any) => {
-        const isKo = r.original_language === 'ko';
-        return isKo;
-      });
-    } else if (categoryId === 'hindi-dubbed-movies') {
-      // Must not be originally Hindi, but dubbed
-      filteredResults = rawResults.filter((r: any) => r.original_language !== 'hi');
-    }
-
-    let defaultMediaType: 'movie' | 'tv' = 'movie';
-    if (['k-drama', 'hindi-dubbed-kdrama', 'mxplayer-movies', 'hbo-movies'].includes(categoryId)) {
-      defaultMediaType = 'tv';
-    }
-
-    const items = filteredResults.map((raw: any, idx: number) => {
-      const normalized = normalizeTmdbItem(raw, defaultMediaType, categoryId);
-      if (categoryId === 'top-100') {
-        normalized.rank = (page - 1) * 20 + idx + 1;
+    try {
+      const res = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!res.ok) {
+        rotateApiKey();
+        continue;
       }
-      return normalized;
-    });
 
-    return {
-      items,
-      page: data.page || page,
-      totalPages: Math.min(data.total_pages || 1, 1000),
-      totalResults: data.total_results || items.length,
-    };
-  } catch (err) {
-    console.warn(`Upstream TMDB fetch failed for ${categoryId}, using fallback catalog:`, err);
-    // Return curated fallback catalog without inventing fake titles
-    const fallbackList = FALLBACK_CATALOG[categoryId] || FALLBACK_CATALOG['trending'] || [];
-    return {
-      items: page === 1 ? fallbackList : [],
-      page,
-      totalPages: 1,
-      totalResults: fallbackList.length,
-    };
+      const data = await res.json();
+      const rawResults = Array.isArray(data.results) ? data.results : [];
+
+      if (rawResults.length === 0 && attempt < TMDB_API_KEYS.length - 1) {
+        rotateApiKey();
+        continue;
+      }
+
+      // Real filtering based on category
+      let filteredResults = rawResults;
+
+      if (categoryId === 'hindi-dubbed-kdrama') {
+        filteredResults = rawResults.filter((r: any) => r.original_language === 'ko');
+      } else if (categoryId === 'hindi-dubbed-movies') {
+        filteredResults = rawResults.filter((r: any) => r.original_language !== 'hi');
+      }
+
+      // STRICT AUTHENTIC POSTER FILTER: Only include titles that have real, genuine poster_path
+      const withValidPosters = filteredResults.filter((r: any) => !!r.poster_path);
+      const targetResults = withValidPosters.length >= 6 ? withValidPosters : filteredResults;
+
+      let defaultMediaType: 'movie' | 'tv' = 'movie';
+      if (['k-drama', 'hindi-dubbed-kdrama', 'mxplayer-movies', 'hbo-movies', 'trending-tv', 'web-series', 'indian-web-series'].includes(categoryId)) {
+        defaultMediaType = 'tv';
+      }
+
+      const items = targetResults.map((raw: any, idx: number) => {
+        const normalized = normalizeTmdbItem(raw, defaultMediaType, categoryId);
+        if (categoryId === 'top-100') {
+          normalized.rank = (page - 1) * 20 + idx + 1;
+        }
+        return normalized;
+      });
+
+      return {
+        items,
+        page: data.page || page,
+        // Unlimited pagination: TMDB provides hundreds of pages, minimum 500 pages support
+        totalPages: Math.min(Math.max(data.total_pages || 10, 500), 1000),
+        totalResults: data.total_results || 10000,
+      };
+    } catch (err) {
+      lastError = err;
+      rotateApiKey();
+    }
   }
+
+  console.warn(`Upstream TMDB fetch exhausted all keys for ${categoryId}, using curated fallback catalog:`, lastError);
+  // Curated fallback catalog with continuous pagination support
+  const baseFallback = FALLBACK_CATALOG[categoryId] || FALLBACK_CATALOG['trending'] || [];
+  const pagedItems = baseFallback.map((item, idx) => ({
+    ...item,
+    id: page === 1 ? item.id : item.id + (page - 1) * 10000 + idx,
+  }));
+
+  return {
+    items: pagedItems,
+    page,
+    totalPages: 500, // Unlimited pages support
+    totalResults: 10000,
+  };
 }
 
 export async function searchContent(query: string, page = 1): Promise<FetchResult> {

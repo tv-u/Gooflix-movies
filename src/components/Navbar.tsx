@@ -38,6 +38,7 @@ interface NavbarProps {
   onOpenShare?: () => void;
   onOpenDetails?: (item: MovieOrShow) => void;
   onOpenSearchModal?: () => void;
+  onOpenMegaMenu?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -55,6 +56,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenShare,
   onOpenDetails,
   onOpenSearchModal,
+  onOpenMegaMenu,
 }) => {
   const [searchVal, setSearchVal] = useState('');
   const [searchResults, setSearchResults] = useState<MovieOrShow[]>(() => getDefaultSearchRecommendations().slice(0, 8));
@@ -357,13 +359,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             {isDarkOled ? <Moon className="w-4 h-4 text-amber-400" /> : <Sun className="w-4 h-4 text-amber-400" />}
           </button>
 
-          {/* Mobile Menu Toggle */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white cursor-pointer"
-          >
-            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-          </button>
+          {/* Full Mega Menu Trigger (Desktop & Mobile) */}
+          {onOpenMegaMenu && (
+            <button
+              onClick={onOpenMegaMenu}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-red-600/20 via-amber-500/25 to-red-600/20 hover:from-red-600/35 hover:to-amber-500/35 border border-amber-500/50 hover:border-amber-400 text-amber-300 hover:text-white font-black text-xs transition-all cursor-pointer shadow-lg shadow-amber-500/10 group"
+              title="Open Mega Menu (128 Categories & Tools)"
+            >
+              <Menu className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+              <span className="font-black">Menu</span>
+              <span className="text-[10px] bg-red-600 text-white font-black px-1.5 py-0.5 rounded-full shadow-sm leading-none">
+                128
+              </span>
+            </button>
+          )}
         </div>
       </div>
 

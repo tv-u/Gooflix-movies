@@ -26,6 +26,7 @@ import { SeoFooter } from './components/SeoFooter';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { EntryPopupNotification } from './components/EntryPopupNotification';
 import { AdvancedSearchModal } from './components/AdvancedSearchModal';
+import { MegaMenuModal } from './components/MegaMenuModal';
 import {
   Flame,
   Film,
@@ -89,6 +90,7 @@ export default function App() {
   const [shareMedia, setShareMedia] = useState<MovieOrShow | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
+  const [isMegaMenuOpen, setIsMegaMenuOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showEntryPopup, setShowEntryPopup] = useState<boolean>(true);
 
@@ -382,6 +384,15 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleRandomPick = () => {
+    const pool = [...trendingItems, ...bollywoodItems, ...categoryItems].filter(Boolean);
+    if (pool.length > 0) {
+      const item = pool[Math.floor(Math.random() * pool.length)];
+      handlePlayMovie(item);
+      showToast(`🎲 Now Playing: ${item.title || item.name}`);
+    }
+  };
+
   const handleOpenMandatoryPage = (pId: MandatoryPageId) => {
     setMandatoryPage(pId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -414,6 +425,7 @@ export default function App() {
         }}
         onOpenDetails={setDetailsMedia}
         onOpenSearchModal={() => setIsSearchModalOpen(true)}
+        onOpenMegaMenu={() => setIsMegaMenuOpen(true)}
       />
 
       {/* Main Container with offset for fixed header */}
@@ -1026,6 +1038,7 @@ export default function App() {
           setDrawerDefaultTab('watchlist');
           setIsDrawerOpen(true);
         }}
+        onOpenMenu={() => setIsMegaMenuOpen(true)}
       />
 
       {/* ADVANCED LIVE INSTANT SEARCH MODAL */}
@@ -1034,6 +1047,26 @@ export default function App() {
         onClose={() => setIsSearchModalOpen(false)}
         onPlayMovie={handlePlayMovie}
         onOpenDetails={setDetailsMedia}
+      />
+
+      {/* MEGA NAVIGATION MENU MODAL (128 Categories & Tools) */}
+      <MegaMenuModal
+        isOpen={isMegaMenuOpen}
+        onClose={() => setIsMegaMenuOpen(false)}
+        activeCategory={activeCategory}
+        onSelectCategory={handleSelectCategory}
+        onSelectTab={handleTabSwitch}
+        onOpenServersModal={() => setIsServersModalOpen(true)}
+        onOpenLangModal={() => setIsLangModalOpen(true)}
+        onOpenWatchlist={() => {
+          setDrawerDefaultTab('watchlist');
+          setIsDrawerOpen(true);
+        }}
+        onOpenCleanGuide={() => handleOpenMandatoryPage('cleanwindow_guide')}
+        currentServerIndex={currentServerIndex}
+        currentLang={currentLang}
+        watchlistCount={watchlist.length}
+        onRandomPick={handleRandomPick}
       />
 
       {/* FOOTER matching standalone.html with Mandatory Pages Triggers */}

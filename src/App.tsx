@@ -20,6 +20,7 @@ import { ServersModal } from './components/ServersModal';
 import { DrawerModal } from './components/DrawerModal';
 import { MandatoryPages, MandatoryPageId } from './components/MandatoryPages';
 import { SmartAdsterra } from './components/SmartAdsterra';
+import { AdsterraContainerAd } from './components/AdsterraContainerAd';
 import { LanguageModal } from './components/LanguageModal';
 import { ShareModal } from './components/ShareModal';
 import { SeoFooter } from './components/SeoFooter';
@@ -607,6 +608,12 @@ export default function App() {
                   ))}
                 </div>
               </div>
+
+              {/* HIGH-EARNING ADSTERRA INVOKE CONTAINER AD BANNER */}
+              <AdsterraContainerAd
+                badgeText="ADSTERRA VIP 4K SPONSOR"
+                className="my-8"
+              />
             </div>
 
             {/* UNLIMITED PAGINATION & CATEGORIES SECTION */}
@@ -935,6 +942,12 @@ export default function App() {
                       <span>{categoryItems.length} Titles in Memory</span>
                     </div>
                   </div>
+
+                  {/* HIGH-EARNING ADSTERRA INVOKE CONTAINER AD BANNER */}
+                  <AdsterraContainerAd
+                    badgeText="SPONSORED 4K STREAMING NODE"
+                    className="mt-8 mb-4"
+                  />
                 </>
               )}
             </div>

@@ -1276,49 +1276,243 @@ export async function fetchCategoryContent(
   };
 }
 
+export function getDefaultSearchRecommendations(): MovieOrShow[] {
+  // 12 curated blockbuster titles with verified original studio posters across Bollywood, Hollywood, South, Punjabi & K-Drama
+  return [
+    {
+      id: 1112426,
+      title: 'Stree 2: Sarkate Ka Aatank',
+      name: 'Stree 2: Sarkate Ka Aatank',
+      overview: 'After the events of Stree, the town of Chanderi is being haunted again by a headless entity named Sarkata.',
+      poster_path: '/nfnhwfUEFuSOxxf4jDdBlY6Lccw.jpg',
+      backdrop_path: '/fVV0A67kDjTTQ4CvUn8LoletRmI.jpg',
+      media_type: 'movie',
+      release_date: '2024-08-15',
+      vote_average: 7.8,
+      original_language: 'hi',
+      quality: '4K',
+      isDubbedHindi: true,
+    },
+    {
+      id: 857598,
+      title: 'Pushpa 2: The Rule',
+      name: 'Pushpa 2: The Rule',
+      overview: 'Pushpa Raj controls the red sandalwood smuggling empire while clashing with SP Bhanwar Singh Shekhawat.',
+      poster_path: '/1T21FblunT0y8fz7YaW8JMYgUKm.jpg',
+      backdrop_path: '/7jGItf7idJsBm9QTNoTNTU3KiGe.jpg',
+      media_type: 'movie',
+      release_date: '2024-12-05',
+      vote_average: 8.0,
+      original_language: 'te',
+      quality: '4K',
+      isDubbedHindi: true,
+    },
+    {
+      id: 801688,
+      title: 'Kalki 2898 AD',
+      name: 'Kalki 2898 AD',
+      overview: 'Set in a post-apocalyptic world in the year 2898 AD, a modern avatar of Vishnu descends to protect humanity.',
+      poster_path: '/rstcAnBeCkxNQjNp3YXrF6IP1tW.jpg',
+      backdrop_path: '/o8XSR1SONnjcsv84NRu6Mwsl5io.jpg',
+      media_type: 'movie',
+      release_date: '2024-06-27',
+      vote_average: 7.7,
+      original_language: 'te',
+      quality: '4K',
+      isDubbedHindi: true,
+    },
+    {
+      id: 93405,
+      title: 'Squid Game',
+      name: 'Squid Game',
+      overview: 'Hundreds of cash-strapped players accept an invitation to compete in children’s games with deadly stakes.',
+      poster_path: '/dDlEmu3EZ0Pgg93K2SVNLCjCSvE.jpg',
+      backdrop_path: '/2meX1nMdScFOoV4370rqHWFDxSu.jpg',
+      media_type: 'tv',
+      first_air_date: '2021-09-17',
+      vote_average: 8.3,
+      original_language: 'ko',
+      quality: '4K',
+      isDubbedHindi: true,
+      providerName: 'Netflix',
+    },
+    {
+      id: 539745,
+      title: 'Animal',
+      name: 'Animal',
+      overview: 'A toxic father-son relationship triggers a lethal underworld war of retribution, vengeance, and extreme violence.',
+      poster_path: '/6pzI1DIlxwAFffw9OZcG6cr031U.jpg',
+      backdrop_path: '/rg1E0Ya6YYiGPcg5p1ZIkDd8u3F.jpg',
+      media_type: 'movie',
+      release_date: '2023-12-01',
+      vote_average: 7.0,
+      original_language: 'hi',
+      quality: '4K',
+    },
+    {
+      id: 1153576,
+      title: 'Fighter',
+      name: 'Fighter',
+      overview: 'Top Air Force aviators establish Air Dragons, a specialized squad dealing with border tensions.',
+      poster_path: '/dJPT2Uf12X6aFg8i5N67NTpIZ9t.jpg',
+      backdrop_path: '/zDE9hd1SG9695YncbZGjSf7Z9Jk.jpg',
+      media_type: 'movie',
+      release_date: '2024-01-25',
+      vote_average: 7.2,
+      original_language: 'hi',
+      quality: '1080p',
+    },
+    {
+      id: 1084013,
+      title: 'Carry On Jatta 3',
+      name: 'Carry On Jatta 3',
+      overview: 'Advocate Dhillon’s son Jass wants to marry Meet, but Meet’s brothers are sworn rivals with his father.',
+      poster_path: '/pJqAHS4a1GrtqreALTPG5cqqLKf.jpg',
+      backdrop_path: '/xiqkR69oluHI5cC11jSYJA7L5Vu.jpg',
+      media_type: 'movie',
+      release_date: '2023-06-29',
+      vote_average: 7.6,
+      original_language: 'pa',
+      quality: '1080p',
+    },
+    {
+      id: 533535,
+      title: 'Deadpool & Wolverine',
+      name: 'Deadpool & Wolverine',
+      overview: 'Wade Wilson toils away in civilian life until the TVA recruits him for a multiverse-saving mission with Wolverine.',
+      poster_path: '/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg',
+      backdrop_path: '/9l1eZiJHmhr5jYmsVha2N9Jum72.jpg',
+      media_type: 'movie',
+      release_date: '2024-07-26',
+      vote_average: 7.7,
+      original_language: 'en',
+      quality: '4K',
+      isDubbedHindi: true,
+    },
+    {
+      id: 693134,
+      title: 'Dune: Part Two',
+      name: 'Dune: Part Two',
+      overview: 'Paul Atreides unites with Chani and the Fremen on a warpath of revenge against the conspirators.',
+      poster_path: '/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg',
+      backdrop_path: '/xOMo8BRK7PfcJv9JCnx7s5200bm.jpg',
+      media_type: 'movie',
+      release_date: '2024-03-01',
+      vote_average: 8.2,
+      original_language: 'en',
+      quality: '4K',
+    },
+    {
+      id: 579974,
+      title: 'RRR',
+      name: 'RRR',
+      overview: 'A fictional tale about two legendary revolutionaries fighting for their country in the 1920s.',
+      poster_path: '/wE0I6efAW4cDDmZQWtwZMOW44EJ.jpg',
+      backdrop_path: '/i0Y0wP8H6SRgjr6QmuwbtQbS24D.jpg',
+      media_type: 'movie',
+      release_date: '2022-03-24',
+      vote_average: 8.0,
+      original_language: 'te',
+      quality: '4K',
+      isDubbedHindi: true,
+    },
+    {
+      id: 872906,
+      title: 'Jawan',
+      name: 'Jawan',
+      overview: 'A man is driven by a personal vendetta to rectify the wrongs in society while keeping a promise.',
+      poster_path: '/jFt1gS4BGHlK8xt76Y81Alp4dbt.jpg',
+      backdrop_path: '/5LtSjMNw6j3LkG29Oa4O0iY5U8.jpg',
+      media_type: 'movie',
+      release_date: '2023-09-07',
+      vote_average: 7.3,
+      original_language: 'hi',
+      quality: '4K',
+    },
+    {
+      id: 107588,
+      title: 'Aashram',
+      name: 'Aashram',
+      overview: 'A godman’s insidious empire manipulates faith, politics, crime, and power in the heartland of India.',
+      poster_path: '/5tK4hBaHXqEcz1iHRr0nCgaABPk.jpg',
+      backdrop_path: '/ycrAqPzKabKQBIvBRxkROChqc64.jpg',
+      media_type: 'tv',
+      first_air_date: '2020-08-28',
+      vote_average: 7.9,
+      original_language: 'hi',
+      quality: '1080p',
+      providerName: 'MX Player',
+    },
+  ];
+}
+
 export async function searchContent(query: string, page = 1): Promise<FetchResult> {
-  if (!query.trim()) {
-    return { items: [], page: 1, totalPages: 1, totalResults: 0 };
-  }
-
-  const apiKey = getApiKey();
-  const encoded = encodeURIComponent(query.trim());
-  const url = `${TMDB_BASE_URL}/search/multi?api_key=${apiKey}&query=${encoded}&page=${page}&include_adult=false`;
-
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Search failed: ${res.status}`);
-    const data = await res.json();
-
-    const validItems = (data.results || [])
-      .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
-      .map((item: any) => normalizeTmdbItem(item, item.media_type));
-
+  const cleanQuery = query.trim();
+  if (!cleanQuery) {
     return {
-      items: validItems,
-      page: data.page || page,
-      totalPages: Math.min(data.total_pages || 1, 100),
-      totalResults: data.total_results || validItems.length,
-    };
-  } catch (err) {
-    console.warn('Search query failed:', err);
-    // Search across our fallback catalog
-    const qLower = query.toLowerCase();
-    const allFallback = Object.values(FALLBACK_CATALOG).flat();
-    const matched = allFallback.filter(
-      (item) =>
-        item.title.toLowerCase().includes(qLower) ||
-        (item.name && item.name.toLowerCase().includes(qLower)) ||
-        item.overview.toLowerCase().includes(qLower)
-    );
-    const deduped = deduplicateItems([], matched);
-    return {
-      items: deduped,
+      items: getDefaultSearchRecommendations(),
       page: 1,
       totalPages: 1,
-      totalResults: deduped.length,
+      totalResults: 12,
     };
   }
+
+  const encoded = encodeURIComponent(cleanQuery);
+
+  for (let attempt = 0; attempt < TMDB_API_KEYS.length; attempt++) {
+    const apiKey = getApiKey();
+    const url = `${TMDB_BASE_URL}/search/multi?api_key=${apiKey}&query=${encoded}&page=${page}&include_adult=false`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        rotateApiKey();
+        continue;
+      }
+      const data = await res.json();
+      const rawResults = Array.isArray(data.results) ? data.results : [];
+
+      // Valid items with authentic posters
+      const validItems = rawResults
+        .filter((item: any) => (item.media_type === 'movie' || item.media_type === 'tv') && item.poster_path)
+        .map((item: any) => normalizeTmdbItem(item, item.media_type));
+
+      const fallbackAll = rawResults
+        .filter((item: any) => item.media_type === 'movie' || item.media_type === 'tv')
+        .map((item: any) => normalizeTmdbItem(item, item.media_type));
+
+      const finalItems = validItems.length > 0 ? validItems : fallbackAll;
+
+      return {
+        items: finalItems,
+        page: data.page || page,
+        totalPages: Math.min(data.total_pages || 1, 100),
+        totalResults: data.total_results || finalItems.length,
+      };
+    } catch (err) {
+      rotateApiKey();
+    }
+  }
+
+  // Fallback search across fallback catalog & default recommendations
+  const qLower = cleanQuery.toLowerCase();
+  const allFallback = [
+    ...getDefaultSearchRecommendations(),
+    ...Object.values(FALLBACK_CATALOG).flat(),
+  ];
+  const matched = allFallback.filter(
+    (item) =>
+      item.title.toLowerCase().includes(qLower) ||
+      (item.name && item.name.toLowerCase().includes(qLower)) ||
+      item.overview.toLowerCase().includes(qLower)
+  );
+  const deduped = deduplicateItems([], matched);
+  return {
+    items: deduped,
+    page: 1,
+    totalPages: 1,
+    totalResults: deduped.length,
+  };
 }
 
 export async function fetchItemDetails(id: number, mediaType: 'movie' | 'tv'): Promise<Partial<MovieOrShow>> {

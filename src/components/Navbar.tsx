@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { CategoryId, MovieOrShow } from '../types';
 import { LANGUAGES_50 } from '../services/i18n';
 import { SERVERS_20 } from '../services/playerServers';
-import { searchContent, getPosterUrl } from '../services/tmdb';
+import { searchContent, getPosterUrl, getDefaultSearchRecommendations } from '../services/tmdb';
 import { TopNotificationTicker } from './TopNotificationTicker';
 import {
   Tv,
@@ -19,6 +19,8 @@ import {
   Sparkles,
   Server,
   Zap,
+  Flame,
+  Maximize2,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -34,6 +36,8 @@ interface NavbarProps {
   onPlayMovie: (item: MovieOrShow) => void;
   onOpenCleanGuide?: () => void;
   onOpenShare?: () => void;
+  onOpenDetails?: (item: MovieOrShow) => void;
+  onOpenSearchModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -49,9 +53,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   onPlayMovie,
   onOpenCleanGuide,
   onOpenShare,
+  onOpenDetails,
+  onOpenSearchModal,
 }) => {
   const [searchVal, setSearchVal] = useState('');
-  const [searchResults, setSearchResults] = useState<MovieOrShow[]>([]);
+  const [searchResults, setSearchResults] = useState<MovieOrShow[]>(() => getDefaultSearchRecommendations().slice(0, 8));
   const [isSearching, setIsSearching] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -61,26 +67,25 @@ export const Navbar: React.FC<NavbarProps> = ({
   const currentLangObj = LANGUAGES_50.find((l) => l.code === currentLang) || LANGUAGES_50[0];
   const activeServer = SERVERS_20[currentServerIndex] || SERVERS_20[0];
 
-  // Debounced search
+  // Debounced live auto-search
   useEffect(() => {
     if (!searchVal.trim()) {
-      setSearchResults([]);
-      setDropdownOpen(false);
+      setSearchResults(getDefaultSearchRecommendations().slice(0, 8));
+      setIsSearching(false);
       return;
     }
 
+    setIsSearching(true);
     const timer = setTimeout(async () => {
-      setIsSearching(true);
       try {
         const res = await searchContent(searchVal);
         setSearchResults(res.items.slice(0, 8));
-        setDropdownOpen(true);
       } catch (err) {
         console.warn('Live search failed:', err);
       } finally {
         setIsSearching(false);
       }
-    }, 300);
+    }, 180);
 
     return () => clearTimeout(timer);
   }, [searchVal]);
@@ -160,68 +165,139 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Search & Utility Bar */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Live Search Input with Dropdown matching standalone.html */}
-          <div ref={searchBoxRef} className="relative w-36 sm:w-64">
+          {/* Live Search Input with Advanced Dropdown */}
+          <div ref={searchBoxRef} className="relative w-40 sm:w-72">
             <Search className="w-4 h-4 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Search 10,000+ movies..."
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
-              onFocus={() => searchResults.length > 0 && setDropdownOpen(true)}
-              className="w-full bg-white/10 border border-white/15 rounded-xl pl-9 pr-7 py-1.5 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-red-500 focus:bg-black/90 transition-all"
+              onFocus={() => setDropdownOpen(true)}
+              className="w-full bg-white/10 border border-white/15 rounded-xl pl-9 pr-14 py-1.5 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-red-500 focus:bg-black/90 transition-all"
             />
-            {searchVal && (
-              <button
-                onClick={() => setSearchVal('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 text-gray-400">
+              {searchVal ? (
+                <button
+                  onClick={() => setSearchVal('')}
+                  className="hover:text-white cursor-pointer p-0.5"
+                  title="Clear"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              ) : null}
+              {onOpenSearchModal && (
+                <button
+                  onClick={onOpenSearchModal}
+                  className="hover:text-red-400 cursor-pointer p-0.5"
+                  title="Open Fullscreen Search"
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
 
-            {/* Dropdown Results */}
+            {/* Advanced Dropdown Results */}
             {dropdownOpen && (
-              <div className="absolute top-full mt-2 left-0 right-0 sm:right-auto sm:w-80 bg-[#12141f] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-96 overflow-y-auto">
-                <div className="p-2 space-y-1">
-                  {isSearching ? (
-                    <div className="p-4 text-center text-xs text-gray-400">Searching TMDB...</div>
-                  ) : searchResults.length === 0 ? (
-                    <div className="p-4 text-center text-xs text-gray-400">No results found.</div>
-                  ) : (
-                    searchResults.map((item) => (
-                      <div
-                        key={item.id}
+              <div className="absolute top-full mt-2 left-0 right-0 sm:right-auto sm:w-96 bg-[#10121d] border border-white/15 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[32rem] flex flex-col">
+                {/* Header & Quick Keyword Pills */}
+                <div className="p-3 bg-white/[0.03] border-b border-white/10 shrink-0 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-black">
+                    <span className="flex items-center gap-1.5 text-amber-400">
+                      {searchVal ? <Search className="w-3.5 h-3.5 text-red-500" /> : <Flame className="w-3.5 h-3.5 fill-amber-400" />}
+                      <span>{searchVal ? `Live Results for "${searchVal}"` : 'Default Trending & Popular (डिफ़ॉल्ट फिल्में)'}</span>
+                    </span>
+                    <span className="text-[10px] text-gray-400">{searchResults.length} Titles</span>
+                  </div>
+
+                  {/* Quick keyword pills */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                    {['Stree 2', 'Pushpa 2', 'Squid Game', 'Kalki', 'Animal', 'Deadpool'].map((chip) => (
+                      <button
+                        key={chip}
                         onClick={() => {
-                          setDropdownOpen(false);
-                          setSearchVal('');
-                          onPlayMovie(item);
+                          setSearchVal(chip);
                         }}
-                        className="flex items-center gap-2.5 p-2 rounded-xl hover:bg-white/10 cursor-pointer transition group"
+                        className="px-2 py-0.5 rounded-lg bg-white/10 hover:bg-red-600 text-[10px] font-bold text-gray-200 hover:text-white transition cursor-pointer shrink-0"
                       >
-                        <img
-                          src={getPosterUrl(item.poster_path, 'w342')}
-                          alt={item.title}
-                          className="w-9 h-12 object-cover rounded bg-black shrink-0"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <h5 className="text-xs font-bold text-white truncate group-hover:text-red-400">
-                            {item.title || item.name}
-                          </h5>
-                          <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-0.5">
-                            <span className="text-amber-400 font-bold flex items-center gap-0.5">
-                              <Star className="w-2.5 h-2.5 fill-amber-400" />
-                              {item.vote_average}
-                            </span>
-                            <span>•</span>
-                            <span>{(item.release_date || item.first_air_date || '').slice(0, 4)}</span>
+                        {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Results List */}
+                <div className="p-2 space-y-1 overflow-y-auto flex-1">
+                  {isSearching ? (
+                    <div className="p-6 text-center text-xs text-gray-400 animate-pulse">
+                      ⚡ Searching verified stream...
+                    </div>
+                  ) : searchResults.length === 0 ? (
+                    <div className="p-6 text-center text-xs text-gray-400">
+                      No titles found. Try "Stree 2", "Pushpa", or "Squid Game".
+                    </div>
+                  ) : (
+                    searchResults.map((item) => {
+                      const isTv = item.media_type === 'tv' || (!item.title && !!item.name);
+                      return (
+                        <div
+                          key={`nav-search-${item.id}`}
+                          onClick={() => {
+                            setDropdownOpen(false);
+                            if (onOpenDetails) {
+                              onOpenDetails(item);
+                            } else {
+                              onPlayMovie(item);
+                            }
+                          }}
+                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/10 cursor-pointer transition group border border-transparent hover:border-white/10"
+                        >
+                          <img
+                            src={getPosterUrl(item.poster_path, 'w342')}
+                            alt={item.title}
+                            className="w-10 h-14 object-cover rounded-lg bg-black shrink-0 border border-white/10"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <h5 className="text-xs font-black text-white truncate group-hover:text-red-400">
+                              {item.title || item.name}
+                            </h5>
+                            <div className="flex items-center gap-2 text-[10px] text-gray-400 mt-1">
+                              <span className="text-amber-400 font-bold flex items-center gap-0.5">
+                                <Star className="w-2.5 h-2.5 fill-amber-400" />
+                                {item.vote_average ? item.vote_average.toFixed(1) : '7.5'}
+                              </span>
+                              <span>•</span>
+                              <span>{(item.release_date || item.first_air_date || '').slice(0, 4)}</span>
+                              <span>•</span>
+                              <span className="text-[9px] uppercase px-1 rounded bg-white/10 text-gray-300 font-bold">
+                                {isTv ? 'Series' : 'Movie'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="w-8 h-8 rounded-full bg-red-600/20 group-hover:bg-red-600 text-red-400 group-hover:text-white flex items-center justify-center shrink-0 transition">
+                            <Play className="w-3.5 h-3.5 fill-current ml-0.5" />
                           </div>
                         </div>
-                        <Play className="w-3.5 h-3.5 text-red-500 shrink-0 opacity-0 group-hover:opacity-100 transition" />
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
+
+                {/* Footer Fullscreen Action */}
+                {onOpenSearchModal && (
+                  <div className="p-2 border-t border-white/10 bg-white/[0.02] shrink-0">
+                    <button
+                      onClick={() => {
+                        setDropdownOpen(false);
+                        onOpenSearchModal();
+                      }}
+                      className="w-full py-2 rounded-xl bg-red-600/20 hover:bg-red-600 text-red-300 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Open Fullscreen Advanced Search (बड़ी विंडो)</span>
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -25,6 +25,7 @@ import { ShareModal } from './components/ShareModal';
 import { SeoFooter } from './components/SeoFooter';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { EntryPopupNotification } from './components/EntryPopupNotification';
+import { AdvancedSearchModal } from './components/AdvancedSearchModal';
 import {
   Flame,
   Film,
@@ -87,8 +88,21 @@ export default function App() {
   const [isLangModalOpen, setIsLangModalOpen] = useState<boolean>(false);
   const [shareMedia, setShareMedia] = useState<MovieOrShow | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showEntryPopup, setShowEntryPopup] = useState<boolean>(true);
+
+  // Global search keyboard shortcut (/ or Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.key === '/' || (e.ctrlKey && e.key === 'k')) && !['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) {
+        e.preventDefault();
+        setIsSearchModalOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -398,6 +412,8 @@ export default function App() {
           setShareMedia(heroMedia || (trendingItems[0] || null));
           setIsShareModalOpen(true);
         }}
+        onOpenDetails={setDetailsMedia}
+        onOpenSearchModal={() => setIsSearchModalOpen(true)}
       />
 
       {/* Main Container with offset for fixed header */}
@@ -1004,16 +1020,20 @@ export default function App() {
       <MobileBottomNav
         activeCategory={activeCategory}
         onSelectCategory={handleSelectCategory}
-        onOpenSearch={() => {
-          setMandatoryPage(null);
-          setActiveTab('home');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+        onOpenSearch={() => setIsSearchModalOpen(true)}
         watchlistCount={watchlist.length}
         onOpenWatchlist={() => {
           setDrawerDefaultTab('watchlist');
           setIsDrawerOpen(true);
         }}
+      />
+
+      {/* ADVANCED LIVE INSTANT SEARCH MODAL */}
+      <AdvancedSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+        onPlayMovie={handlePlayMovie}
+        onOpenDetails={setDetailsMedia}
       />
 
       {/* FOOTER matching standalone.html with Mandatory Pages Triggers */}

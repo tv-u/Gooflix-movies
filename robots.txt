@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://gooflix-movies.pages.dev/sitemap.xml
